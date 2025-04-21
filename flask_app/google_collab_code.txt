@@ -1,0 +1,212 @@
+# 📦 Import necessary libraries
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+from sklearn.model_selection import train_test_split, GridSearchCV
+from sklearn.preprocessing import StandardScaler, PolynomialFeatures
+from sklearn.metrics import accuracy_score, classification_report
+
+from sklearn.linear_model import LogisticRegression
+from sklearn.svm import SVC
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.ensemble import RandomForestClassifier
+from xgboost import XGBClassifier
+
+import warnings
+warnings.filterwarnings('ignore')
+
+# 🚀 Upload dataset
+from google.colab import files
+uploaded = files.upload()
+csv_filename = next(iter(uploaded))
+df = pd.read_csv(csv_filename)
+print("✅ Dataset loaded!")
+print("Shape:", df.shape)
+
+# Handle missing values
+df.replace('?', np.nan, inplace=True)
+df.dropna(inplace=True)
+df = df.apply(pd.to_numeric)
+
+# Feature Engineering
+df['age_bins'] = pd.cut(df['age'], bins=[0, 40, 55, 70, 100], labels=[0, 1, 2, 3])
+df['chol_bins'] = pd.cut(df['chol'], bins=[0, 200, 240, 600], labels=[0, 1, 2])
+df['thalach_oldpeak'] = df['thalach'] * df['oldpeak']
+df['cp_trestbps'] = df['cp'] * df['trestbps']
+
+# Prepare X and y
+X = df.drop("num", axis=1)
+y = (df["num"] > 0).astype(int)
+
+X = pd.get_dummies(X, columns=['age_bins', 'chol_bins'])
+
+# Polynomial interaction features
+poly = PolynomialFeatures(degree=2, interaction_only=True, include_bias=False)
+X_poly = poly.fit_transform(X)
+X_poly = pd.DataFrame(X_poly)
+
+# Scale features
+scaler = StandardScaler()
+X_scaled = scaler.fit_transform(X_poly)
+
+# Train-test split
+X_train, X_test, y_train, y_test = train_test_split(X_scaled, y,
+                                                    test_size=0.2,
+                                                    random_state=42,
+                                                    stratify=y)
+
+# ------------------------- Hyperparameter Grids -------------------------
+param_grids = {
+    "Logistic Regression": {
+        'C': [0.01, 0.1, 1, 10],
+        'penalty': ['l2'],
+        'solver': ['lbfgs']
+    },
+    "SVM": {
+        'C': [0.1, 1, 10],
+        'kernel': ['linear', 'rbf'],
+        'gamma': ['scale', 'auto'],
+        'probability': [True]
+    },
+    "Decision Tree": {
+        'max_depth': [None, 5, 10, 20],
+        'min_samples_split': [2, 5, 10]
+    },
+    "Random Forest": {
+        'n_estimators': [50, 100, 200],
+        'max_depth': [None, 5, 10],
+        'min_samples_split': [2, 5, 10]
+    },
+    "XGBoost": {
+        'n_estimators': [50, 100, 200],
+        'max_depth': [3, 5, 7],
+        'learning_rate': [0.01, 0.1, 0.2],
+        'subsample': [0.8, 1],
+        'colsample_bytree': [0.8, 1]
+    }
+}
+
+# Models to train
+base_models = {
+    "Logistic Regression": LogisticRegression(max_iter=1000, random_state=42),
+    "SVM": SVC(random_state=42),
+    "Decision Tree": DecisionTreeClassifier(random_state=42),
+    "Random Forest": RandomForestClassifier(random_state=42),
+    "XGBoost": XGBClassifier(use_label_encoder=False, eval_metric='logloss', random_state=42)
+}
+
+# Grid Search + Training
+best_models = {}
+def grid_search_model(model, param_grid, name):
+    print(f"\n🔍 Grid Search for {name}...")
+    grid_search = GridSearchCV(model, param_grid, cv=5, scoring='accuracy', n_jobs=-1)
+    grid_search.fit(X_train, y_train)
+    print(f"✅ Best Parameters: {grid_search.best_params_}")
+    print(f"📈 Best CV Accuracy: {grid_search.best_score_:.4f}")
+    return grid_search.best_estimator_
+
+for name in base_models:
+    best_model = grid_search_model(base_models[name], param_grids[name], name)
+    best_models[name] = best_model
+
+# ------------------------- Evaluation -------------------------
+def evaluate_model(model, model_name):
+    y_train_pred = model.predict(X_train)
+    y_test_pred = model.predict(X_test)
+
+    print(f"\n📊 {model_name} Results:")
+    print(f"Train Accuracy: {accuracy_score(y_train, y_train_pred):.4f}")
+    print(f"Test Accuracy: {accuracy_score(y_test, y_test_pred):.4f}")
+    print("Classification Report:")
+    print(classification_report(y_test, y_test_pred))
+
+print("\n🧠 Model Evaluation Results")
+for name, model in best_models.items():
+    evaluate_model(model, name)
+
+
+#___________________2nd Cell_______________________
+
+# Save all best models to .pkl files
+for name, model in best_models.items():
+    filename = name.lower().replace(" ", "_") + "_model.pkl"
+    with open(filename, 'wb') as f:
+        pickle.dump(model, f)
+
+print("✅ All models saved as .pkl files!")
+from google.colab import files
+files.download('xgboost_model.pkl')
+files.download('logistic_regression_model.pkl')
+files.download('svm_model.pkl')
+files.download('decision_tree_model.pkl')
+files.download('random_forest_model.pkl')
+
+#___________________3rd Cell_______________________
+import joblib
+
+# Save models to disk
+joblib.dump(best_models["Logistic Regression"], "logistic_regression_model.pkl")
+joblib.dump(best_models["SVM"], "svm_model.pkl")
+joblib.dump(best_models["Decision Tree"], "decision_tree_model.pkl")
+joblib.dump(best_models["Random Forest"], "random_forest_model.pkl")
+joblib.dump(best_models["XGBoost"], "xgboost_model.pkl")
+
+print("✅ All models saved successfully!")
+
+
+
+#___________________4th Cell_______________________
+import joblib
+
+# Save preprocessor objects
+joblib.dump(scaler, 'scaler.pkl')
+joblib.dump(poly, 'poly.pkl')
+
+print("✅ Preprocessor objects saved successfully!")
+
+#___________________5th Cell_______________________
+files.download('scaler.pkl')
+files.download('poly.pkl')
+
+#___________________6th Cell_______________________
+expected_columns = X.columns
+joblib.dump(expected_columns, 'expected_columns.pkl')
+
+#___________________7th Cell_______________________
+files.download('expected_columns.pkl')
+
+#___________________8th Cell_______________________
+from google.colab import files
+uploaded = files.upload()     # click “Choose Files” and pick expected_columns.pkl
+# once uploaded, it lives in /content/
+import joblib
+expected = joblib.load("/content/expected_columns.pkl")
+print([c for c in expected if c.startswith("thal")])
+
+#___________________9th Cell_______________________
+# 📦 Import necessary libraries
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+# 🚀 Upload dataset
+from google.colab import files
+uploaded = files.upload()
+csv_filename = next(iter(uploaded))
+df = pd.read_csv(csv_filename)
+print("✅ Dataset loaded!")
+print("Shape:", df.shape)
+
+# 1. See the first few entries
+df['cp'].head(10)
+
+# 2. List all unique values
+df['cp'].unique()
+
+# 3. Count how many of each you have
+df['cp'].value_counts(dropna=False)
+
+# 4. If you want them in sorted order:
+df['cp'].value_counts().sort_index()
