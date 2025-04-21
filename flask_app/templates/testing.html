@@ -1,0 +1,1335 @@
+document.addEventListener("DOMContentLoaded", function() {
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+  
+    const canvas = document.getElementById("bgCanvas");
+    const renderer = new THREE.WebGLRenderer({ canvas: canvas, alpha: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+  
+    const geometry = new THREE.BoxGeometry(3, 3, 3);
+    const material = new THREE.MeshStandardMaterial({ color: 0xff0055, flatShading: true });
+    const cube = new THREE.Mesh(geometry, material);
+    scene.add(cube);
+  
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+    scene.add(ambientLight);
+    const pointLight = new THREE.PointLight(0xffffff, 1);
+    pointLight.position.set(5, 5, 5);
+    scene.add(pointLight);
+  
+    camera.position.z = 7;
+  
+    window.addEventListener('resize', () => {
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+    });
+  
+    function animate() {
+      requestAnimationFrame(animate);
+      cube.rotation.x += 0.005;
+      cube.rotation.y += 0.005;
+      renderer.render(scene, camera);
+    }
+    animate();
+  });
+     
+
+  #index.html 
+  <!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Heart Disease Predictor - Form</title>
+  <!-- Bootstrap CSS from CDN -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- External CSS file -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css_file.css') }}">
+</head>
+<body>
+  <!-- 3D Background -->
+  <canvas id="bgCanvas"></canvas>
+
+  <div class="container mt-5">
+    <h2 class="text-center mb-4">Heart Disease Prediction (Binary)</h2>
+    
+    {% if error %}
+      <div class="alert alert-danger">{{ error }}</div>
+    {% endif %}
+
+    <!-- Form with custom labels -->
+    <form action="/predict" method="post" target="_blank">
+      <div class="row g-3">
+        {% set field_labels = {
+          'age': 'Age',
+          'sex': 'Gender',
+          'cp': 'Chest pain types',
+          'trestbps': 'Resting Blood Pressure (mm/hg)',
+          'chol': 'Cholesterol Level',
+          'fbs': 'Is fasting blood sugar > 120mg/dL',
+          'restecg': 'Resting Electrocardiograph Result',
+          'thalach': 'Maximum Heart Rate Achieved',
+          'exang': 'Does Exercise Induced Angina',
+          'oldpeak': 'Old Peak (ST Depression Induced by Exercise Relative to Rest)',
+          'slope': 'Slope of ST Segment',
+          'ca': 'Number of major vessels (0-3) colored by Fluoroscopy',
+          'thal': 'Thalassemia Type'
+        } %}
+
+        {% for field in field_labels %}
+          <div class="col-md-4">
+            <label for="{{ field }}" class="form-label">{{ field_labels[field] }}</label>
+            <input type="number" step="any" name="{{ field }}" id="{{ field }}" class="form-control" required>
+          </div>
+        {% endfor %}
+        
+        <div class="col-12 text-center">
+          <button type="submit" class="btn btn-primary mt-3">Predict</button>
+        </div>
+      </div>
+    </form>
+  </div>
+
+  <!-- Three.js from CDN for the 3D background -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <!-- Bootstrap JS Bundle from CDN (optional) -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <!-- External JavaScript file for 3D animation -->
+  <script src="{{ url_for('static', filename='js_file.js') }}"></script>
+</body>
+</html>
+
+#results.html 
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Heart Disease Predictor - Results</title>
+  <!-- Bootstrap CSS from CDN -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- External CSS file -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css_file.css') }}">
+</head>
+<body>
+  <!-- 3D Background -->
+  <canvas id="bgCanvas"></canvas>
+  
+  <div class="container">
+    <h2 class="text-center mb-4">Heart Disease Prediction Results</h2>
+    
+    <!-- Overall result -->
+    <div class="card p-3 mb-3">
+      <h4>Overall Result: {{ overall_result }}</h4>
+    </div>
+    
+    <!-- Detailed Predictions Table -->
+    <div class="card p-3 mb-3">
+      <h5>Detailed Model Predictions:</h5>
+      <table class="table table-bordered">
+        <thead>
+          <tr>
+            <th>Model</th>
+            <th>Prediction</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for model, result in detailed_predictions.items() %}
+          <tr>
+            <td>{{ model }}</td>
+            <td>{{ result }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    
+    <!-- Generate Report Button -->
+    <div class="text-center">
+      <a href="{{ url_for('generate_report') }}" target="_blank" class="btn btn-success">Generate Report</a>
+    </div>
+  </div>
+  
+  <!-- Three.js from CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <!-- Bootstrap JS Bundle from CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <!-- External JavaScript file for 3D animation -->
+  <script src="{{ url_for('static', filename='js_file.js') }}"></script>
+</body>
+</html>
+ 
+#css 
+/* Ensure full-page layout and remove default margins */
+body, html {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  overflow: hidden;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* 3D Canvas styling to fill the background */
+#bgCanvas {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: -1;
+  width: 100%;
+  height: 100%;
+}
+
+/* Main container: premium floating card style with vertical scrolling if needed */
+.container {
+  position: relative;
+  z-index: 2;
+  background-color: rgba(255, 255, 255, 0.9);
+  border-radius: 8px;
+  padding: 30px;
+  margin-top: 40px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+/* Headers with subtle shadow effect */
+h2, h4, h5 {
+  text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.1);
+}
+# navy js 
+document.addEventListener("DOMContentLoaded", function() {
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+
+  const canvas = document.getElementById("bgCanvas");
+  const renderer = new THREE.WebGLRenderer({ canvas: canvas, alpha: true });
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.setClearColor(0x111122, 1); // Darker, muted blue-gray for a medical feel
+
+  // Generate simplified heartbeat waveform points
+  function generateWaveformPoints() {
+      const cyclePoints = [
+          new THREE.Vector3(0, 0, 0),
+          new THREE.Vector3(1, 0.3, 0),    // P wave
+          new THREE.Vector3(1.5, -0.6, 0), // Q
+          new THREE.Vector3(1.7, 1.2, 0),  // R (strong peak)
+          new THREE.Vector3(1.9, -0.4, 0), // S
+          new THREE.Vector3(3, 0.4, 0),    // T wave
+          new THREE.Vector3(4, 0, 0)
+      ];
+      const points = [];
+      const cycles = 3; // Fewer cycles for a cleaner look
+      for (let i = 0; i < cycles; i++) {
+          cyclePoints.forEach(p => {
+              points.push(new THREE.Vector3(p.x + i * 4, p.y, p.z));
+          });
+      }
+      return points;
+  }
+
+  const points = generateWaveformPoints();
+  const curve = new THREE.CatmullRomCurve3(points);
+  const tubeGeometry = new THREE.TubeGeometry(curve, 50, 0.3, 8, false); // Thinner tube
+
+  const material = new THREE.MeshBasicMaterial({
+      color: 0xff4444, // Soft red for heart association
+      transparent: true,
+      opacity: 0.4,
+      blending: THREE.AdditiveBlending
+  });
+
+  const waveform = new THREE.Mesh(tubeGeometry, material);
+
+  // Create a simpler grid with fewer lines, more spaced out
+  const lines = [];
+  const gridSize = 1; // Reduced density
+  const spacing = 30; // More spacing for clarity
+  const layers = 2;   // Fewer layers to avoid clutter
+  for (let k = 0; k < layers; k++) {
+      const z = -30 * (k + 1);
+      for (let i = -gridSize; i <= gridSize; i++) {
+          for (let j = -gridSize; j <= gridSize; j++) {
+              const line = waveform.clone();
+              line.position.set(i * spacing, j * spacing, z);
+              scene.add(line);
+              lines.push(line);
+          }
+      }
+  }
+
+  camera.position.set(20, 20, 80); // Closer view for focus
+  camera.lookAt(0, 0, 0);
+
+  window.addEventListener('resize', () => {
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+  });
+
+  function animate() {
+      requestAnimationFrame(animate);
+      const time = Date.now() * 0.001;
+      const pulse = (Math.sin(time * 2 * Math.PI * 0.67) + 1) / 2; // ~90 BPM heartbeat
+      const opacity = 0.2 + pulse * 0.3; // Subtle pulse from 0.2 to 0.5
+      lines.forEach(line => {
+          line.material.opacity = opacity;
+      });
+      renderer.render(scene, camera);
+  }
+  animate();
+}); 
+
+#index 
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Heart Disease Predictor - Form</title>
+  <!-- Bootstrap CSS from CDN -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- External CSS file -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css_file.css') }}">
+</head>
+<body>
+  <!-- 3D Background -->
+  <canvas id="bgCanvas"></canvas>
+
+  <div class="container mt-5">
+    <h2 class="text-center mb-4">Heart Disease Prediction</h2>
+    
+    {% if error %}
+      <div class="alert alert-danger">{{ error }}</div>
+    {% endif %}
+
+    <!-- Form with custom labels -->
+    <form action="/predict" method="post" target="_blank">
+      <div class="row g-3">
+        {% set field_labels = {
+          'age': 'Age',
+          'sex': 'Gender',
+          'cp': 'Chest pain types',
+          'trestbps': 'Resting Blood Pressure (mm/hg)',
+          'chol': 'Cholesterol Level',
+          'fbs': 'Is fasting blood sugar > 120mg/dL',
+          'restecg': 'Resting Electrocardiograph Result',
+          'thalach': 'Maximum Heart Rate Achieved',
+          'exang': 'Does Exercise Induced Angina',
+          'oldpeak': 'Old Peak (ST Depression Induced by Exercise Relative to Rest)',
+          'slope': 'Slope of ST Segment',
+          'ca': 'Number of major vessels (0-3) colored by Fluoroscopy',
+          'thal': 'Thalassemia Type'
+        } %}
+
+        {% for field in field_labels %}
+          <div class="col-md-4">
+            <label for="{{ field }}" class="form-label">{{ field_labels[field] }}</label>
+            <input type="number" step="any" name="{{ field }}" id="{{ field }}" class="form-control" required>
+          </div>
+        {% endfor %}
+        
+        <div class="col-12 text-center">
+          <button type="submit" class="btn btn-primary mt-3">Predict</button>
+        </div>
+      </div>
+    </form>
+  </div>
+
+  <!-- Three.js from CDN for the 3D background -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <!-- Bootstrap JS Bundle from CDN (optional) -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <!-- External JavaScript file for 3D animation -->
+  <script src="{{ url_for('static', filename='js_file.js') }}"></script>
+</body>
+</html>
+
+
+# flask code 
+from flask import Flask, render_template, request, url_for, session, send_file
+import pickle
+import joblib
+import pandas as pd
+import numpy as np
+import io
+from fpdf import FPDF
+
+app = Flask(__name__)
+app.secret_key = "your_secret_key_here"  # Required for session usage
+
+# ----------------------------
+# Load trained models (file paths unchanged)
+# ----------------------------
+models = {
+    'Logistic Regression': pickle.load(open("D:/DA and DS Projects/Heart_Disease_Prediction/flask_app/models/logistic_regression_model.pkl", "rb")),
+    'SVM': pickle.load(open("D:/DA and DS Projects/Heart_Disease_Prediction/flask_app/models/svm_model.pkl", "rb")),
+    'Decision Tree': pickle.load(open("D:/DA and DS Projects/Heart_Disease_Prediction/flask_app/models/decision_tree_model.pkl", "rb")),
+    'Random Forest': pickle.load(open("D:/DA and DS Projects/Heart_Disease_Prediction/flask_app/models/random_forest_model (2).pkl", "rb")),
+    'XGBoost': pickle.load(open("D:/DA and DS Projects/Heart_Disease_Prediction/flask_app/models/xgboost_model.pkl", "rb"))
+}
+
+# ----------------------------
+# Load preprocessor objects (paths unchanged)
+# ----------------------------
+scaler = joblib.load("D:/DA and DS Projects/Heart_Disease_Prediction/flask_app/models/scaler.pkl")
+poly   = joblib.load("D:/DA and DS Projects/Heart_Disease_Prediction/flask_app/models/poly.pkl")
+expected_columns = joblib.load("D:/DA and DS Projects/Heart_Disease_Prediction/flask_app/models/expected_columns.pkl")
+
+@app.route('/')
+def index():
+    return render_template('index.html')
+
+@app.route('/predict', methods=['POST'])
+def predict():
+    try:
+        # 1. Collect 13 raw inputs from the form
+        raw_feature_names = [
+            'age', 'sex', 'cp', 'trestbps', 'chol', 
+            'fbs', 'restecg', 'thalach', 'exang', 
+            'oldpeak', 'slope', 'ca', 'thal'
+        ]
+        raw_features = {feat: float(request.form.get(feat)) for feat in raw_feature_names}
+
+        # 2. Create a DataFrame from the raw input
+        df = pd.DataFrame([raw_features])
+        
+        # 3. Compute interaction features
+        df['thalach_oldpeak'] = df['thalach'] * df['oldpeak']
+        df['cp_trestbps'] = df['cp'] * df['trestbps']
+        
+        # 4. Compute categorical bins as in training
+        df['age_bins']  = pd.cut(df['age'], bins=[0, 40, 55, 70, 100], labels=[0, 1, 2, 3])
+        df['chol_bins'] = pd.cut(df['chol'], bins=[0, 200, 240, 600], labels=[0, 1, 2])
+        
+        # 5. One-hot encode the binned columns
+        df = pd.get_dummies(df, columns=['age_bins', 'chol_bins'])
+        
+        # 6. Reindex to ensure DataFrame has the same columns as in training
+        df = df.reindex(columns=expected_columns, fill_value=0)
+        
+        # 7. Transform into polynomial features
+        poly_features = poly.transform(df)
+        
+        # 8. Scale the polynomial features
+        final_input = scaler.transform(poly_features)
+        
+        # 9. Generate predictions from each model (binary: 0 or 1)
+        detailed_predictions = {}
+        positives = 0
+        total_models = len(models)
+        for name, model in models.items():
+            pred = int(model.predict(final_input)[0])
+            if pred == 1:
+                detailed_predictions[name] = "High Chance of Heart Disease"
+                positives += 1
+            else:
+                detailed_predictions[name] = "Low Chance of Heart Disease"
+        
+        overall_percentage = (positives / total_models) * 100
+        overall_result = f"{overall_percentage:.0f}% chance that you have heart disease"
+        
+        # Store the input and result details in session for PDF generation
+        session['report'] = {
+            'inputs': raw_features,
+            'overall_result': overall_result,
+            'detailed_predictions': detailed_predictions
+        }
+        
+        # Render the results page (results.html) in a new tab
+        return render_template('results.html',
+                               overall_result=overall_result,
+                               detailed_predictions=detailed_predictions)
+    
+    except Exception as e:
+        return render_template('index.html', error=str(e))
+
+@app.route('/generate_report')
+def generate_report():
+    # Retrieve report details from session
+    report_data = session.get('report')
+    if not report_data:
+        return "No report data available. Please run a prediction first.", 400
+
+    # Mapping for friendly feature names
+    feature_mapping = {
+        'age': 'Age',
+        'sex': 'Gender',
+        'cp': 'Chest pain types',
+        'trestbps': 'Resting Blood Pressure (mm/hg)',
+        'chol': 'Cholesterol Level',
+        'fbs': 'Is fasting blood sugar > 120mg/dL',
+        'restecg': 'Resting Electrocardiograph Result',
+        'thalach': 'Maximum Heart Rate Achieved',
+        'exang': 'Does Exercise Induced Angina',
+        'oldpeak': 'Old Peak (ST Depression Induced by Exercise Relative to Rest)',
+        'slope': 'Slope of ST Segment',
+        'ca': 'Number of major vessels (0-3) colored by Fluoroscopy',
+        'thal': 'Thalassemia Type'
+    }
+
+    # Create PDF report
+    pdf = FPDF()
+    pdf.add_page()
+    pdf.set_font("Arial", 'B', 16)
+    pdf.cell(0, 10, "Heart Disease Prediction Report", ln=True, align="C")
+    pdf.ln(10)
+
+    # Section: User Inputs with friendly names
+    pdf.set_font("Arial", 'B', 14)
+    pdf.cell(0, 10, "User Inputs:", ln=True)
+    pdf.set_font("Arial", size=12)
+    for key, value in report_data['inputs'].items():
+        friendly_name = feature_mapping.get(key, key)
+        pdf.cell(0, 8, f"{friendly_name}: {value}", ln=True)
+    pdf.ln(5)
+
+    # Section: Overall Result
+    pdf.set_font("Arial", 'B', 14)
+    pdf.cell(0, 10, "Overall Prediction:", ln=True)
+    pdf.set_font("Arial", size=12)
+    pdf.cell(0, 8, report_data['overall_result'], ln=True)
+    pdf.ln(5)
+
+    # Section: Detailed Model Predictions
+    pdf.set_font("Arial", 'B', 14)
+    pdf.cell(0, 10, "Detailed Model Predictions:", ln=True)
+    pdf.set_font("Arial", 'B', 12)
+    pdf.cell(60, 8, "Model", border=1)
+    pdf.cell(0, 8, "Prediction", border=1, ln=True)
+    pdf.set_font("Arial", size=12)
+    for model_name, pred_str in report_data['detailed_predictions'].items():
+        pdf.cell(60, 8, model_name, border=1)
+        pdf.cell(0, 8, pred_str, border=1, ln=True)
+
+    # Instead of writing directly to a BytesIO object, output the PDF as a string
+    pdf_data = pdf.output(dest='S').encode('latin1')
+    pdf_bytes = io.BytesIO(pdf_data)
+    return send_file(pdf_bytes, as_attachment=True,
+                     download_name="heart_disease_report.pdf",
+                     mimetype="application/pdf")
+
+@app.route('/generate_report_placeholder')
+def generate_report_placeholder():
+    # This is a fallback if needed
+    return "<h2>Report generation is not yet implemented.</h2>"
+
+if __name__ == '__main__':
+    app.run(debug=True)
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Heart Disease Prediction</title>
+<script src="https://cdn.tailwindcss.com/3.4.16"></script>
+<script>tailwind.config={theme:{extend:{colors:{primary:'#FF6B6B',secondary:'#FFE4E1'},borderRadius:{'none':'0px','sm':'4px',DEFAULT:'8px','md':'12px','lg':'16px','xl':'20px','2xl':'24px','3xl':'32px','full':'9999px','button':'8px'}}}}</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Pacifico&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/remixicon@4.5.0/fonts/remixicon.css" rel="stylesheet">
+<style>
+:where([class^="ri-"])::before { content: "\f3c2"; }
+body {
+font-family: 'Poppins', sans-serif;
+background: linear-gradient(135deg, #ffffff 0%, #FFF5F5 100%);
+min-height: 100vh;
+}
+.heart-beat {
+animation: heartbeat 1.5s ease-in-out infinite;
+}
+@keyframes heartbeat {
+0% { transform: scale(1); }
+14% { transform: scale(1.1); }
+28% { transform: scale(1); }
+42% { transform: scale(1.1); }
+70% { transform: scale(1); }
+}
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+-webkit-appearance: none;
+margin: 0;
+}
+.custom-radio input[type="radio"] {
+position: absolute;
+opacity: 0;
+}
+.custom-radio input[type="radio"] + label {
+position: relative;
+padding-left: 28px;
+cursor: pointer;
+display: inline-block;
+line-height: 20px;
+}
+.custom-radio input[type="radio"] + label:before {
+content: '';
+position: absolute;
+left: 0;
+top: 0;
+width: 20px;
+height: 20px;
+border: 2px solid #FF6B6B;
+border-radius: 50%;
+background: #fff;
+}
+.custom-radio input[type="radio"]:checked + label:after {
+content: '';
+position: absolute;
+left: 5px;
+top: 5px;
+width: 10px;
+height: 10px;
+border-radius: 50%;
+background: #FF6B6B;
+}
+.custom-select {
+appearance: none;
+background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23FF6B6B'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
+background-repeat: no-repeat;
+background-position: right 0.5rem center;
+background-size: 1.5em 1.5em;
+}
+.result-card {
+opacity: 0;
+transform: translateY(20px);
+transition: opacity 0.5s ease, transform 0.5s ease;
+}
+.result-card.show {
+opacity: 1;
+transform: translateY(0);
+}
+.progress-ring {
+transform: rotate(-90deg);
+}
+.progress-ring__circle {
+transition: stroke-dashoffset 0.5s ease;
+}
+</style>
+</head>
+<body>
+<div class="min-h-screen flex flex-col">
+<!-- Header -->
+<header class="bg-white shadow-md relative overflow-hidden">
+<div class="container mx-auto px-6 py-4 flex items-center justify-between">
+<div class="flex items-center">
+<div class="w-10 h-10 flex items-center justify-center text-primary mr-2">
+<i class="ri-heart-pulse-fill ri-2x"></i>
+</div>
+<h1 class="text-2xl font-['Pacifico'] text-primary">HeartGuard</h1>
+</div>
+<nav class="hidden md:flex space-x-8">
+<a href="#" class="text-gray-700 hover:text-primary transition-colors">Home</a>
+<a href="#" class="text-gray-700 hover:text-primary transition-colors">About</a>
+<a href="#" class="text-gray-700 hover:text-primary transition-colors">Services</a>
+<a href="#" class="text-gray-700 hover:text-primary transition-colors">Contact</a>
+</nav>
+<div class="md:hidden w-8 h-8 flex items-center justify-center">
+<i class="ri-menu-line ri-2x text-gray-700"></i>
+</div>
+</div>
+<div class="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-secondary via-primary to-secondary"></div>
+</header>
+<!-- Hero Section -->
+<section class="relative py-12 bg-white">
+<div class="container mx-auto px-6">
+<div class="flex flex-col md:flex-row items-center">
+<div class="md:w-1/2 mb-8 md:mb-0 pr-8">
+<h1 class="text-4xl md:text-5xl font-bold text-gray-800 mb-4">Heart Disease <span class="text-primary">Prediction</span></h1>
+<p class="text-lg text-gray-600 mb-4">Save ₹20,000 - ₹80,000 by avoiding unnecessary coronary angiograms. Our AI-powered prediction tool helps assess heart blockage risk without invasive dye tests.</p>
+<p class="text-base text-gray-500 mb-6">Get instant results and make informed decisions about whether you need an angiogram, saving both money and exposure to contrast dyes.</p>
+<div class="flex space-x-4">
+<a href="#prediction-form" class="bg-primary text-white px-6 py-3 !rounded-button font-medium hover:bg-opacity-90 transition-colors shadow-lg whitespace-nowrap">Get Started</a>
+<a href="#" class="border-2 border-primary text-primary px-6 py-3 !rounded-button font-medium hover:bg-primary hover:text-white transition-colors whitespace-nowrap">Learn More</a>
+</div>
+</div>
+<div class="md:w-1/2 relative pl-8">
+<img src="https://readdy.ai/api/search-image?query=A%20modern%20medical%20visualization%20showing%20comparison%20between%20traditional%20angiogram%20procedure%20and%20AI%20prediction%2C%20split%20screen%20layout%2C%20professional%20healthcare%20technology%20concept%2C%20soft%20lighting%2C%20clean%20medical%20aesthetic%2C%20high-end%203D%20rendering%20with%20subtle%20depth%20of%20field&width=600&height=400&seq=1&orientation=landscape" alt="Heart Health Visualization" class="rounded-lg shadow-xl w-full object-cover object-top">
+<div class="absolute bottom-4 right-4 bg-white/90 backdrop-blur-sm px-4 py-2 rounded-lg shadow-lg">
+<p class="text-sm text-gray-600">Save on expensive angiograms</p>
+<p class="text-xs text-primary">Non-invasive prediction</p>
+</div>
+</div>
+</div>
+</div>
+<div class="absolute bottom-0 left-0 w-full h-24 bg-gradient-to-t from-white to-transparent"></div>
+</section>
+<!-- Main Content -->
+<main class="flex-grow container mx-auto px-6 py-8">
+<!-- Prediction Form -->
+<section id="prediction-form" class="mb-12">
+<div class="max-w-4xl mx-auto bg-white rounded-xl shadow-lg overflow-hidden">
+<div class="bg-primary p-6">
+<h2 class="text-2xl font-bold text-white flex items-center">
+<span class="w-8 h-8 flex items-center justify-center mr-2 heart-beat">
+<i class="ri-heart-pulse-fill ri-lg"></i>
+</span>
+Heart Disease Risk Assessment
+</h2>
+<p class="text-white text-opacity-90">Enter your clinical metrics below for an accurate prediction</p>
+</div>
+<form id="heart-prediction-form" class="p-6">
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+<!-- Age -->
+<div class="form-group">
+<label for="age" class="block text-sm font-medium text-gray-700 mb-1">Age</label>
+<div class="relative">
+<div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+<i class="ri-user-3-line text-gray-400"></i>
+</div>
+<input type="number" id="age" name="age" min="1" max="120" class="pl-10 w-full border-gray-300 focus:border-primary focus:ring focus:ring-primary focus:ring-opacity-20 rounded shadow-sm text-sm" placeholder="Enter your age" required>
+</div>
+</div>
+<!-- Gender -->
+<div class="form-group">
+<label class="block text-sm font-medium text-gray-700 mb-1">Gender</label>
+<div class="flex space-x-6">
+<div class="custom-radio">
+<input type="radio" id="male" name="sex" value="1" checked>
+<label for="male" class="text-sm">Male</label>
+</div>
+<div class="custom-radio">
+<input type="radio" id="female" name="sex" value="0">
+<label for="female" class="text-sm">Female</label>
+</div>
+</div>
+</div>
+<!-- Chest Pain Type -->
+<div class="form-group">
+<label for="cp" class="block text-sm font-medium text-gray-700 mb-1">Chest Pain Type</label>
+<select id="cp" name="cp" class="custom-select w-full border-gray-300 focus:border-primary focus:ring focus:ring-primary focus:ring-opacity-20 rounded shadow-sm text-sm" required>
+<option value="" disabled selected>Select chest pain type</option>
+<option value="0">Typical Angina</option>
+<option value="1">Atypical Angina</option>
+<option value="2">Non-anginal Pain</option>
+<option value="3">Asymptomatic</option>
+</select>
+</div>
+<!-- Resting Blood Pressure -->
+<div class="form-group">
+<label for="trestbps" class="block text-sm font-medium text-gray-700 mb-1">Resting Blood Pressure (mm/Hg)</label>
+<div class="relative">
+<div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+<i class="ri-pulse-line text-gray-400"></i>
+</div>
+<input type="number" id="trestbps" name="trestbps" min="80" max="200" class="pl-10 w-full border-gray-300 focus:border-primary focus:ring focus:ring-primary focus:ring-opacity-20 rounded shadow-sm text-sm" placeholder="e.g., 120" required>
+</div>
+</div>
+<!-- Cholesterol Level -->
+<div class="form-group">
+<label for="chol" class="block text-sm font-medium text-gray-700 mb-1">Cholesterol Level (mg/dl)</label>
+<div class="relative">
+<div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+<i class="ri-test-tube-line text-gray-400"></i>
+</div>
+<input type="number" id="chol" name="chol" min="100" max="600" class="pl-10 w-full border-gray-300 focus:border-primary focus:ring focus:ring-primary focus:ring-opacity-20 rounded shadow-sm text-sm" placeholder="e.g., 200" required>
+</div>
+</div>
+<!-- Fasting Blood Sugar -->
+<div class="form-group">
+<label class="block text-sm font-medium text-gray-700 mb-1">Is Fasting Blood Sugar > 120 mg/dl?</label>
+<div class="flex space-x-6">
+<div class="custom-radio">
+<input type="radio" id="fbs-yes" name="fbs" value="1">
+<label for="fbs-yes" class="text-sm">Yes</label>
+</div>
+<div class="custom-radio">
+<input type="radio" id="fbs-no" name="fbs" value="0" checked>
+<label for="fbs-no" class="text-sm">No</label>
+</div>
+</div>
+</div>
+<!-- Resting ECG -->
+<div class="form-group">
+<label for="restecg" class="block text-sm font-medium text-gray-700 mb-1">Resting Electrocardiograph Result</label>
+<select id="restecg" name="restecg" class="custom-select w-full border-gray-300 focus:border-primary focus:ring focus:ring-primary focus:ring-opacity-20 rounded shadow-sm text-sm" required>
+<option value="" disabled selected>Select ECG result</option>
+<option value="0">Normal</option>
+<option value="1">ST-T Wave Abnormality</option>
+<option value="2">Left Ventricular Hypertrophy</option>
+</select>
+</div>
+<!-- Max Heart Rate -->
+<div class="form-group">
+<label for="thalach" class="block text-sm font-medium text-gray-700 mb-1">Maximum Heart Rate Achieved</label>
+<div class="relative">
+<div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+<i class="ri-heart-line text-gray-400"></i>
+</div>
+<input type="number" id="thalach" name="thalach" min="60" max="220" class="pl-10 w-full border-gray-300 focus:border-primary focus:ring focus:ring-primary focus:ring-opacity-20 rounded shadow-sm text-sm" placeholder="e.g., 150" required>
+</div>
+</div>
+<!-- Exercise Induced Angina -->
+<div class="form-group">
+<label class="block text-sm font-medium text-gray-700 mb-1">Exercise Induced Angina?</label>
+<div class="flex space-x-6">
+<div class="custom-radio">
+<input type="radio" id="exang-yes" name="exang" value="1" class="peer">
+<label for="exang-yes" class="text-sm cursor-pointer group relative peer-checked:text-primary peer-checked:font-medium transition-colors">
+Yes
+<div class="opacity-0 group-hover:opacity-100 transition-opacity absolute left-0 -top-12 w-64 bg-white p-3 rounded-lg shadow-lg border border-gray-200 text-gray-700 text-xs z-10">
+<div class="absolute -bottom-2 left-4 w-4 h-4 bg-white border-b border-r border-gray-200 transform rotate-45"></div>
+Exercise-induced angina is chest pain or discomfort triggered by physical activity. It's a significant indicator of reduced blood flow to the heart during exertion.
+</div>
+</label>
+</div>
+<div class="custom-radio">
+<input type="radio" id="exang-no" name="exang" value="0" checked>
+<label for="exang-no" class="text-sm">No</label>
+</div>
+</div>
+</div>
+<!-- ST Depression -->
+<div class="form-group">
+<label for="oldpeak" class="block text-sm font-medium text-gray-700 mb-1">ST Depression (Induced by Exercise Relative to Rest)</label>
+<div class="relative">
+<div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+<i class="ri-line-chart-line text-gray-400"></i>
+</div>
+<input type="number" id="oldpeak" name="oldpeak" min="0" max="10" step="0.1" class="pl-10 w-full border-gray-300 focus:border-primary focus:ring focus:ring-primary focus:ring-opacity-20 rounded shadow-sm text-sm" placeholder="e.g., 1.5" required>
+</div>
+</div>
+<!-- Slope of ST Segment -->
+<div class="form-group">
+<label for="slope" class="block text-sm font-medium text-gray-700 mb-1">Slope of ST Segment</label>
+<select id="slope" name="slope" class="custom-select w-full border-gray-300 focus:border-primary focus:ring focus:ring-primary focus:ring-opacity-20 rounded shadow-sm text-sm" required>
+<option value="" disabled selected>Select slope type</option>
+<option value="0">Upsloping</option>
+<option value="1">Flat</option>
+<option value="2">Downsloping</option>
+</select>
+</div>
+<!-- Number of Vessels -->
+<div class="form-group">
+<label for="ca" class="block text-sm font-medium text-gray-700 mb-1">Number of Major Vessels (0-3)</label>
+<select id="ca" name="ca" class="custom-select w-full border-gray-300 focus:border-primary focus:ring focus:ring-primary focus:ring-opacity-20 rounded shadow-sm text-sm" required>
+<option value="" disabled selected>Select number</option>
+<option value="0">0</option>
+<option value="1">1</option>
+<option value="2">2</option>
+<option value="3">3</option>
+</select>
+</div>
+<!-- Thalassemia -->
+<div class="form-group">
+<label for="thal" class="block text-sm font-medium text-gray-700 mb-1">Thalassemia Type</label>
+<select id="thal" name="thal" class="custom-select w-full border-gray-300 focus:border-primary focus:ring focus:ring-primary focus:ring-opacity-20 rounded shadow-sm text-sm" required>
+<option value="" disabled selected>Select type</option>
+<option value="1">Alpha Thalassemia Silent Carrier</option>
+<option value="2">Alpha Thalassemia Trait</option>
+<option value="3">Hemoglobin H Disease</option>
+<option value="4">Alpha Thalassemia Major</option>
+<option value="5">Beta Thalassemia Minor</option>
+<option value="6">Beta Thalassemia Intermedia</option>
+<option value="7">Beta Thalassemia Major</option>
+</select>
+</div>
+</div>
+<div class="mt-8 text-center">
+<button type="submit" id="predict-button" class="bg-primary text-white px-8 py-3 !rounded-button font-medium hover:bg-opacity-90 transition-colors shadow-lg inline-flex items-center whitespace-nowrap">
+<span class="w-6 h-6 flex items-center justify-center mr-2 heart-beat">
+<i class="ri-heart-pulse-fill"></i>
+</span>
+Predict Heart Disease Risk
+</button>
+</div>
+</form>
+</div>
+</section>
+<!-- Results Section (Hidden by Default) -->
+<section id="results-section" class="hidden max-w-4xl mx-auto">
+<div class="bg-white rounded-xl shadow-lg overflow-hidden">
+<div class="bg-primary p-6">
+<div class="flex justify-between items-start">
+<div>
+<h2 class="text-2xl font-bold text-white flex items-center tracking-wide">
+<span class="w-8 h-8 flex items-center justify-center mr-2">
+<i class="ri-file-list-3-line ri-lg"></i>
+</span>
+Your Heart Health Results
+</h2>
+<p class="text-white font-medium">Based on your clinical metrics</p>
+</div>
+<div class="flex gap-3">
+<button onclick="window.open(window.location.href, '_blank')" class="bg-white text-primary px-4 py-2 !rounded-button font-medium hover:bg-opacity-90 transition-colors shadow-lg flex items-center whitespace-nowrap">
+<i class="ri-external-link-line mr-2"></i>
+Open in New Tab
+</button>
+<button onclick="generatePDF()" class="bg-white text-primary px-4 py-2 !rounded-button font-medium hover:bg-opacity-90 transition-colors shadow-lg flex items-center whitespace-nowrap">
+<i class="ri-file-pdf-line mr-2"></i>
+Generate Report
+</button>
+</div>
+</div>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script>
+function generatePDF() {
+const { jsPDF } = window.jspdf;
+const doc = new jsPDF();
+// Add logo and title
+doc.setFontSize(22);
+doc.setTextColor(255, 107, 107); // primary color
+doc.text("HeartGuard Health Report", 20, 20);
+// Add date
+doc.setFontSize(12);
+doc.setTextColor(100, 100, 100);
+doc.text("Report Generated: " + new Date().toLocaleDateString(), 20, 30);
+// Add risk level
+doc.setFontSize(16);
+doc.setTextColor(0, 0, 0);
+doc.text("Risk Assessment", 20, 45);
+const riskLevel = document.getElementById('risk-level').textContent;
+const riskPercentage = document.getElementById('risk-percentage').textContent;
+doc.setFontSize(14);
+doc.text(Risk Level: ${riskLevel}, 20, 55);
+doc.text(Risk Percentage: ${riskPercentage}, 20, 65);
+// Add model predictions
+doc.setFontSize(16);
+doc.text("Model Predictions", 20, 85);
+doc.setFontSize(12);
+const models = ['Logistic Regression', 'SVM', 'Decision Tree', 'Random Forest', 'XGBoost'];
+let yPos = 95;
+models.forEach((model, index) => {
+const result = document.getElementById(${model.toLowerCase().replace(' ', '-')}-result).textContent;
+doc.text(${model}: ${result}, 20, yPos + (index * 10));
+});
+// Add recommendations
+doc.setFontSize(16);
+doc.text("Recommendations", 20, 160);
+doc.setFontSize(12);
+doc.text("1. Consult with a healthcare professional for proper evaluation", 20, 170);
+doc.text("2. Monitor your blood pressure and cholesterol levels regularly", 20, 180);
+doc.text("3. Maintain a healthy lifestyle with regular exercise", 20, 190);
+doc.text("4. Follow a heart-healthy diet", 20, 200);
+// Add footer
+doc.setFontSize(10);
+doc.setTextColor(150, 150, 150);
+doc.text("This report is generated by HeartGuard AI Prediction Tool", 20, 280);
+doc.text("For medical advice, please consult with your healthcare provider", 20, 285);
+// Save the PDF
+doc.save('HeartGuard-Health-Report.pdf');
+}
+</script>
+<div class="p-6">
+<!-- Overall Risk -->
+<div class="result-card mb-8 flex flex-col md:flex-row items-center">
+<div class="mb-6 md:mb-0 md:mr-8 relative">
+<svg class="progress-ring" width="160" height="160">
+<circle class="progress-ring__circle-bg" stroke="#FFDFD3" stroke-width="12" fill="transparent" r="70" cx="80" cy="80"/>
+<circle class="progress-ring__circle" stroke="#FF6B6B" stroke-width="12" fill="transparent" r="70" cx="80" cy="80" stroke-dasharray="440" stroke-dashoffset="440"/>
+</svg>
+<div class="absolute inset-0 flex flex-col items-center justify-center">
+<span id="risk-percentage" class="text-3xl font-bold text-primary">0%</span>
+<span class="text-sm text-gray-600">Risk</span>
+</div>
+</div>
+<div class="flex-1">
+<h3 id="risk-level" class="text-2xl font-bold mb-2 text-gray-800">Calculating your risk...</h3>
+<p id="risk-description" class="text-gray-600 mb-4">Our AI models are analyzing your clinical data to provide an accurate assessment.</p>
+<div class="flex flex-wrap gap-2">
+<span class="bg-secondary bg-opacity-20 text-primary px-3 py-1 rounded-full text-sm font-medium">Personalized Analysis</span>
+<span class="bg-secondary bg-opacity-20 text-primary px-3 py-1 rounded-full text-sm font-medium">Multiple Models</span>
+<span class="bg-secondary bg-opacity-20 text-primary px-3 py-1 rounded-full text-sm font-medium">Medical Grade</span>
+</div>
+</div>
+</div>
+<!-- Model Predictions -->
+<h3 class="text-lg font-semibold text-gray-800 mb-4">Individual Model Predictions</h3>
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+<!-- Logistic Regression -->
+<div class="result-card bg-white rounded-lg border border-gray-200 p-4 shadow-sm">
+<div class="flex items-center mb-2">
+<div class="w-8 h-8 flex items-center justify-center mr-2 bg-blue-100 rounded-full text-blue-600">
+<i class="ri-line-chart-line"></i>
+</div>
+<h4 class="font-medium">Logistic Regression</h4>
+</div>
+<p id="logistic-result" class="text-gray-700">Analyzing...</p>
+</div>
+<!-- SVM -->
+<div class="result-card bg-white rounded-lg border border-gray-200 p-4 shadow-sm">
+<div class="flex items-center mb-2">
+<div class="w-8 h-8 flex items-center justify-center mr-2 bg-purple-100 rounded-full text-purple-600">
+<i class="ri-divide-line"></i>
+</div>
+<h4 class="font-medium">SVM</h4>
+</div>
+<p id="svm-result" class="text-gray-700">Analyzing...</p>
+</div>
+<!-- Decision Tree -->
+<div class="result-card bg-white rounded-lg border border-gray-200 p-4 shadow-sm">
+<div class="flex items-center mb-2">
+<div class="w-8 h-8 flex items-center justify-center mr-2 bg-green-100 rounded-full text-green-600">
+<i class="ri-git-branch-line"></i>
+</div>
+<h4 class="font-medium">Decision Tree</h4>
+</div>
+<p id="dt-result" class="text-gray-700">Analyzing...</p>
+</div>
+<!-- Random Forest -->
+<div class="result-card bg-white rounded-lg border border-gray-200 p-4 shadow-sm">
+<div class="flex items-center mb-2">
+<div class="w-8 h-8 flex items-center justify-center mr-2 bg-teal-100 rounded-full text-teal-600">
+<i class="ri-plant-line"></i>
+</div>
+<h4 class="font-medium">Random Forest</h4>
+</div>
+<p id="rf-result" class="text-gray-700">Analyzing...</p>
+</div>
+<!-- XGBoost -->
+<div class="result-card bg-white rounded-lg border border-gray-200 p-4 shadow-sm">
+<div class="flex items-center mb-2">
+<div class="w-8 h-8 flex items-center justify-center mr-2 bg-orange-100 rounded-full text-orange-600">
+<i class="ri-rocket-line"></i>
+</div>
+<h4 class="font-medium">XGBoost</h4>
+</div>
+<p id="xgb-result" class="text-gray-700">Analyzing...</p>
+</div>
+</div>
+<!-- Recommendations -->
+<div class="mt-8 result-card bg-blue-50 rounded-lg p-6">
+<h3 class="text-lg font-semibold text-gray-800 mb-3 flex items-center">
+<span class="w-6 h-6 flex items-center justify-center mr-2 text-blue-600">
+<i class="ri-information-line"></i>
+</span>
+What's Next?
+</h3>
+<p class="text-gray-700 mb-4">Remember that this prediction is not a medical diagnosis. Please consult with a healthcare professional for proper evaluation and advice.</p>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+<div class="flex items-start">
+<div class="w-8 h-8 flex items-center justify-center mr-2 text-primary shrink-0 mt-1">
+<i class="ri-user-heart-line ri-lg"></i>
+</div>
+<div>
+<h4 class="font-medium text-gray-800">Consult a Doctor</h4>
+<p class="text-sm text-gray-600">Schedule an appointment with a cardiologist to discuss your results.</p>
+</div>
+</div>
+<div class="flex items-start">
+<div class="w-8 h-8 flex items-center justify-center mr-2 text-primary shrink-0 mt-1">
+<i class="ri-heart-pulse-line ri-lg"></i>
+</div>
+<div>
+<h4 class="font-medium text-gray-800">Monitor Your Health</h4>
+<p class="text-sm text-gray-600">Keep track of your blood pressure, cholesterol, and other vital signs.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="mt-8 text-center">
+<button id="back-button" class="bg-white border border-primary text-primary px-6 py-2 !rounded-button font-medium hover:bg-primary hover:text-white transition-colors whitespace-nowrap">
+Back to Form
+</button>
+</div>
+</div>
+</div>
+</section>
+</main>
+<!-- Features Section -->
+<section class="bg-white py-12">
+<div class="container mx-auto px-6">
+<div class="text-center mb-12">
+<h2 class="text-3xl font-bold text-gray-800 mb-4">Why Choose Our Heart Disease Prediction Tool?</h2>
+<p class="text-gray-600 max-w-3xl mx-auto">Save thousands on coronary angiograms while getting reliable heart blockage risk assessment. Our AI models help you make informed decisions about whether you need invasive testing.</p>
+<p class="text-primary font-medium mt-2">Potential savings of ₹20,000 - ₹80,000 on unnecessary angiograms</p>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+<!-- Feature 1 -->
+<div class="bg-white rounded-xl shadow-md p-6 border border-gray-100 hover:shadow-lg transition-shadow">
+<div class="w-12 h-12 flex items-center justify-center bg-secondary bg-opacity-20 text-primary rounded-full mb-4">
+<i class="ri-ai-generate ri-lg"></i>
+</div>
+<h3 class="text-xl font-semibold text-gray-800 mb-2">Advanced AI Models</h3>
+<p class="text-gray-600">Utilizes five different machine learning algorithms to provide comprehensive and accurate predictions.</p>
+</div>
+<!-- Feature 2 -->
+<div class="bg-white rounded-xl shadow-md p-6 border border-gray-100 hover:shadow-lg transition-shadow">
+<div class="w-12 h-12 flex items-center justify-center bg-secondary bg-opacity-20 text-primary rounded-full mb-4">
+<i class="ri-shield-check-line ri-lg"></i>
+</div>
+<h3 class="text-xl font-semibold text-gray-800 mb-2">Medical-Grade Accuracy</h3>
+<p class="text-gray-600">Trained on extensive clinical datasets to ensure reliable risk assessment for heart disease.</p>
+</div>
+<!-- Feature 3 -->
+<div class="bg-white rounded-xl shadow-md p-6 border border-gray-100 hover:shadow-lg transition-shadow">
+<div class="w-12 h-12 flex items-center justify-center bg-secondary bg-opacity-20 text-primary rounded-full mb-4">
+<i class="ri-lock-line ri-lg"></i>
+</div>
+<h3 class="text-xl font-semibold text-gray-800 mb-2">Privacy Focused</h3>
+<p class="text-gray-600">Your health data remains confidential and secure, with no personal information stored after analysis.</p>
+</div>
+<!-- Feature 4 -->
+<div class="bg-white rounded-xl shadow-md p-6 border border-gray-100 hover:shadow-lg transition-shadow">
+<div class="w-12 h-12 flex items-center justify-center bg-secondary bg-opacity-20 text-primary rounded-full mb-4">
+<i class="ri-money-rupee-circle-line ri-lg"></i>
+</div>
+<h3 class="text-xl font-semibold text-gray-800 mb-2">Cost-Effective</h3>
+<p class="text-gray-600">Save ₹20,000 - ₹80,000 by avoiding unnecessary angiograms. Get risk assessment without expensive invasive procedures.</p>
+</div>
+<!-- Feature 5 -->
+<div class="bg-white rounded-xl shadow-md p-6 border border-gray-100 hover:shadow-lg transition-shadow">
+<div class="w-12 h-12 flex items-center justify-center bg-secondary bg-opacity-20 text-primary rounded-full mb-4">
+<i class="ri-user-heart-line ri-lg"></i>
+</div>
+<h3 class="text-xl font-semibold text-gray-800 mb-2">Personalized Insights</h3>
+<p class="text-gray-600">Receive tailored recommendations based on your specific risk factors and clinical metrics.</p>
+</div>
+<!-- Feature 6 -->
+<div class="bg-white rounded-xl shadow-md p-6 border border-gray-100 hover:shadow-lg transition-shadow">
+<div class="w-12 h-12 flex items-center justify-center bg-secondary bg-opacity-20 text-primary rounded-full mb-4">
+<i class="ri-health-book-line ri-lg"></i>
+</div>
+<h3 class="text-xl font-semibold text-gray-800 mb-2">Educational Resources</h3>
+<p class="text-gray-600">Access comprehensive information about heart health, risk factors, and preventive measures.</p>
+</div>
+</div>
+</div>
+</section>
+<!-- Testimonials -->
+<section class="py-12 bg-gradient-to-b from-white to-secondary to-5%">
+<div class="container mx-auto px-6">
+<div class="text-center mb-12">
+<h2 class="text-3xl font-bold text-gray-800 mb-4">What Our Users Say</h2>
+<p class="text-gray-600 max-w-3xl mx-auto">Hear from healthcare professionals and individuals who have benefited from our heart disease prediction tool.</p>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+<!-- Testimonial 1 -->
+<div class="bg-white rounded-xl shadow-md p-6 relative">
+<div class="absolute -top-4 left-6 text-primary text-5xl">"</div>
+<p class="text-gray-600 mb-6 pt-4">This tool helped me identify my risk factors early. After consulting with my doctor, we developed a prevention plan that has significantly improved my heart health metrics.</p>
+<div class="flex items-center">
+<div class="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center text-gray-500 mr-4">
+<i class="ri-user-3-fill ri-lg"></i>
+</div>
+<div>
+<h4 class="font-medium text-gray-800">Mohd Akbar Hussain</h4>
+<p class="text-sm text-gray-500">Patient, 50</p>
+</div>
+</div>
+</div>
+<!-- Testimonial 2 -->
+<div class="bg-white rounded-xl shadow-md p-6 relative">
+<div class="absolute -top-4 left-6 text-primary text-5xl">"</div>
+<p class="text-gray-600 mb-6 pt-4">As a cardiologist, I recommend this tool to my patients for preliminary screening. The multi-model approach provides a comprehensive risk assessment that aligns well with clinical findings.</p>
+<div class="flex items-center">
+<div class="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center text-gray-500 mr-4">
+<i class="ri-user-3-fill ri-lg"></i>
+</div>
+<div>
+<h4 class="font-medium text-gray-800">Dr. Sarah Johnson</h4>
+<p class="text-sm text-gray-500">Cardiologist</p>
+</div>
+</div>
+</div>
+<!-- Testimonial 3 -->
+<div class="bg-white rounded-xl shadow-md p-6 relative">
+<div class="absolute -top-4 left-6 text-primary text-5xl">"</div>
+<p class="text-gray-600 mb-6 pt-4">The prediction tool gave me a wake-up call about my heart health. The detailed breakdown of different risk factors helped me understand exactly what lifestyle changes I needed to make.</p>
+<div class="flex items-center">
+<div class="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center text-gray-500 mr-4">
+<i class="ri-user-3-fill ri-lg"></i>
+</div>
+<div>
+<h4 class="font-medium text-gray-800">Jennifer Rodriguez</h4>
+<p class="text-sm text-gray-500">Healthcare Worker, 42</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Footer -->
+<footer class="bg-gray-800 text-white pt-12 pb-6">
+<div class="container mx-auto px-6">
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-8">
+<!-- About -->
+<div>
+<div class="flex items-center mb-4">
+<div class="w-8 h-8 flex items-center justify-center text-primary mr-2">
+<i class="ri-heart-pulse-fill ri-lg"></i>
+</div>
+<h3 class="text-xl font-['Pacifico'] text-primary">HeartGuard</h3>
+</div>
+<p class="text-gray-400 mb-4">Advanced heart disease prediction using multiple AI models to provide accurate risk assessment and promote heart health.</p>
+<div class="flex space-x-4">
+<a href="#" class="text-gray-400 hover:text-primary transition-colors">
+<i class="ri-facebook-fill ri-lg"></i>
+</a>
+<a href="#" class="text-gray-400 hover:text-primary transition-colors">
+<i class="ri-twitter-fill ri-lg"></i>
+</a>
+<a href="#" class="text-gray-400 hover:text-primary transition-colors">
+<i class="ri-instagram-fill ri-lg"></i>
+</a>
+<a href="#" class="text-gray-400 hover:text-primary transition-colors">
+<i class="ri-linkedin-fill ri-lg"></i>
+</a>
+</div>
+</div>
+<!-- Quick Links -->
+<div>
+<h3 class="text-lg font-semibold mb-4">Quick Links</h3>
+<ul class="space-y-2">
+<li><a href="#" class="text-gray-400 hover:text-primary transition-colors">Home</a></li>
+<li><a href="#" class="text-gray-400 hover:text-primary transition-colors">About Us</a></li>
+<li><a href="#" class="text-gray-400 hover:text-primary transition-colors">Services</a></li>
+<li><a href="#" class="text-gray-400 hover:text-primary transition-colors">Contact</a></li>
+<li><a href="#" class="text-gray-400 hover:text-primary transition-colors">Privacy Policy</a></li>
+</ul>
+</div>
+<!-- Resources -->
+<div>
+<h3 class="text-lg font-semibold mb-4">Resources</h3>
+<ul class="space-y-2">
+<li><a href="#" class="text-gray-400 hover:text-primary transition-colors">Heart Health Guide</a></li>
+<li><a href="#" class="text-gray-400 hover:text-primary transition-colors">Risk Factors</a></li>
+<li><a href="#" class="text-gray-400 hover:text-primary transition-colors">Prevention Tips</a></li>
+<li><a href="#" class="text-gray-400 hover:text-primary transition-colors">Research Papers</a></li>
+<li><a href="#" class="text-gray-400 hover:text-primary transition-colors">FAQ</a></li>
+</ul>
+</div>
+<!-- Contact -->
+<div>
+<h3 class="text-lg font-semibold mb-4">Contact Us</h3>
+<ul class="space-y-3">
+<li class="flex items-start">
+<div class="w-5 h-5 flex items-center justify-center mr-2 text-primary shrink-0 mt-0.5">
+<i class="ri-map-pin-line"></i>
+</div>
+<span class="text-gray-400">123 Health Avenue, Medical District, CA 90210</span>
+</li>
+<li class="flex items-center">
+<div class="w-5 h-5 flex items-center justify-center mr-2 text-primary shrink-0">
+<i class="ri-phone-line"></i>
+</div>
+<span class="text-gray-400">+1 (800) HEART-HEALTH</span>
+</li>
+<li class="flex items-center">
+<div class="w-5 h-5 flex items-center justify-center mr-2 text-primary shrink-0">
+<i class="ri-mail-line"></i>
+</div>
+<span class="text-gray-400">info@heartguard.com</span>
+</li>
+</ul>
+</div>
+</div>
+<div class="border-t border-gray-700 pt-6 flex flex-col md:flex-row justify-between items-center">
+<p class="text-gray-400 text-sm mb-4 md:mb-0">&copy; 2025 HeartGuard. All rights reserved.</p>
+<div class="flex space-x-4">
+<a href="#" class="text-gray-400 hover:text-primary transition-colors text-sm">Terms of Service</a>
+<a href="#" class="text-gray-400 hover:text-primary transition-colors text-sm">Privacy Policy</a>
+<a href="#" class="text-gray-400 hover:text-primary transition-colors text-sm">Cookie Policy</a>
+</div>
+</div>
+</div>
+</footer>
+</div>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+const form = document.getElementById('heart-prediction-form');
+const predictButton = document.getElementById('predict-button');
+const backButton = document.getElementById('back-button');
+const predictionForm = document.getElementById('prediction-form');
+const resultsSection = document.getElementById('results-section');
+document.getElementById('exang-yes').addEventListener('change', function() {
+if(this.checked) {
+this.nextElementSibling.classList.add('text-primary', 'font-medium');
+} else {
+this.nextElementSibling.classList.remove('text-primary', 'font-medium');
+}
+});
+// Form submission
+form.addEventListener('submit', function(e) {
+e.preventDefault();
+// Show loading state
+predictButton.disabled = true;
+predictButton.innerHTML = '<span class="w-6 h-6 flex items-center justify-center mr-2"><i class="ri-loader-4-line animate-spin"></i></span> Analyzing...';
+// Simulate API call with timeout
+setTimeout(function() {
+// Show results section
+predictionForm.classList.add('hidden');
+resultsSection.classList.remove('hidden');
+// Reset button state
+predictButton.disabled = false;
+predictButton.innerHTML = '<span class="w-6 h-6 flex items-center justify-center mr-2 heart-beat"><i class="ri-heart-pulse-fill"></i></span> Predict Heart Disease Risk';
+// Animate results cards
+const resultCards = document.querySelectorAll('.result-card');
+resultCards.forEach((card, index) => {
+setTimeout(() => {
+card.classList.add('show');
+}, 100 * index);
+});
+// Update risk percentage
+updateRiskPercentage(65);
+// Update model results
+updateModelResults();
+}, 1500);
+});
+// Back button
+backButton.addEventListener('click', function() {
+resultsSection.classList.add('hidden');
+predictionForm.classList.remove('hidden');
+// Reset result cards
+const resultCards = document.querySelectorAll('.result-card');
+resultCards.forEach(card => {
+card.classList.remove('show');
+});
+});
+// Function to update risk percentage and circle
+function updateRiskPercentage(percentage) {
+const riskPercentage = document.getElementById('risk-percentage');
+const riskLevel = document.getElementById('risk-level');
+const riskDescription = document.getElementById('risk-description');
+const circle = document.querySelector('.progress-ring__circle');
+// Update text
+riskPercentage.textContent = ${percentage}%;
+// Update circle
+const radius = circle.getAttribute('r');
+const circumference = 2 * Math.PI * radius;
+circle.style.strokeDasharray = ${circumference} ${circumference};
+const offset = circumference - (percentage / 100) * circumference;
+circle.style.strokeDashoffset = offset;
+// Update risk level and description
+if (percentage < 30) {
+riskLevel.textContent = 'Low Risk of Heart Disease';
+riskLevel.className = 'text-2xl font-bold mb-2 text-green-600';
+riskDescription.textContent = 'Your clinical metrics indicate a low risk of heart disease. Continue maintaining a healthy lifestyle.';
+} else if (percentage < 70) {
+riskLevel.textContent = 'Moderate Risk of Heart Disease';
+riskLevel.className = 'text-2xl font-bold mb-2 text-yellow-600';
+riskDescription.textContent = 'Your clinical metrics indicate a moderate risk of heart disease. Consider lifestyle changes and consult with a healthcare professional.';
+} else {
+riskLevel.textContent = 'High Risk of Heart Disease';
+riskLevel.className = 'text-2xl font-bold mb-2 text-red-600';
+riskDescription.textContent = 'Your clinical metrics indicate a high risk of heart disease. It is strongly recommended to consult with a cardiologist as soon as possible.';
+}
+}
+// Function to update model results
+function updateModelResults() {
+const modelResults = {
+'logistic-result': Math.random() < 0.5,
+'svm-result': Math.random() < 0.5,
+'dt-result': Math.random() < 0.5,
+'rf-result': Math.random() < 0.5,
+'xgb-result': Math.random() < 0.5
+};
+let positives = 0;
+for (const [elementId, prediction] of Object.entries(modelResults)) {
+const element = document.getElementById(elementId);
+if (prediction) {
+element.textContent = 'High Chance of Heart Disease';
+element.className = 'text-red-600';
+positives++;
+} else {
+element.textContent = 'Low Chance of Heart Disease';
+element.className = 'text-green-600';
+}
+}
+// Calculate overall risk percentage based on model predictions
+const riskPercentage = Math.round((positives / Object.keys(modelResults).length) * 100);
+updateRiskPercentage(riskPercentage);
+}
+});
+</script>
+</body>
+</html>
